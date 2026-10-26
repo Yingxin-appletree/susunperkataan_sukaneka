@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sukaneka - Latihan Menyusun Perkataan</title>
+<style>
+  :root { --ink:#24324a; --blue:#6688d8; --pale:#eef4ff; --yellow:#ffe7a3; --green:#d9f5df; --pink:#ffe2e8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: "Trebuchet MS", Arial, sans-serif; color:var(--ink); background:linear-gradient(145deg,#f6f8ff,#fff9ef); }
+  header { text-align:center; padding:28px 16px 20px; }
+  h1 { margin:0 0 8px; font-size:clamp(1.6rem,4vw,2.35rem); }
+  header p { margin:0; font-size:1rem; line-height:1.5; }
+  .progress-wrap { width:min(920px,92%); margin:0 auto 18px; background:#e2e8f4; height:10px; border-radius:99px; overflow:hidden; }
+  .progress { height:100%; width:0; background:#75c99a; transition:width .25s; }
+  main { width:min(920px,92%); margin:0 auto 38px; }
+  .card { display:grid; grid-template-columns:minmax(180px, 280px) 1fr; gap:22px; background:white; padding:22px; border-radius:24px; box-shadow:0 8px 24px #283a5910; border:2px solid #e7edfa; }
+  .picture { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:10px; }
+  .picture img { width:100%; max-width:280px; height:auto; object-fit:contain; border-radius:14px; border:2px solid #edf0f7; background:#fff; }
+  .qtag { font-weight:800; background:var(--yellow); border-radius:999px; padding:7px 15px; }
+  .instructions { margin:0 0 14px; font-weight:700; }
+  .word-bank { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:18px; min-height:42px; }
+  .word { border:2px solid #cbd8f4; background:var(--pale); color:var(--ink); border-radius:13px; padding:10px 13px; font-size:1rem; font-weight:700; cursor:pointer; box-shadow:0 2px 0 #d7e0f4; }
+  .word:hover { transform:translateY(-1px); }
+  .word:disabled { opacity:.35; cursor:default; transform:none; }
+  .answer-label { font-weight:800; display:block; margin-bottom:8px; }
+  .answer { min-height:74px; padding:12px; border:2px dashed #b9c8e8; border-radius:15px; background:#fbfcff; display:flex; flex-wrap:wrap; align-content:flex-start; gap:8px; }
+  .answer .word { background:var(--green); border-color:#b4e5c0; box-shadow:0 2px 0 #c7ebcf; }
+  .placeholder { color:#8490a8; font-size:.95rem; padding:8px 3px; }
+  .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+  .action { border:0; border-radius:12px; padding:11px 16px; font-size:.98rem; font-weight:800; cursor:pointer; color:#24324a; background:#e7edfa; }
+  .primary { background:var(--blue); color:white; }
+  .next { background:#bfeccd; }
+  .action:disabled { opacity:.4; cursor:default; }
+  .feedback { min-height:28px; margin:14px 0 0; font-weight:800; line-height:1.45; }
+  .feedback.good { color:#20804b; }
+  .feedback.try { color:#b35b1c; }
+  .bottom { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 4px 0; }
+  .score { font-weight:800; background:#fff; padding:9px 14px; border-radius:12px; }
+  .note { text-align:center; font-size:.85rem; color:#7b8498; padding:0 14px 24px; }
+  @media (max-width:650px) {
+    .card { grid-template-columns:1fr; padding:16px; gap:16px; }
+    .picture img { max-width:230px; max-height:185px; }
+    .picture { flex-direction:row; justify-content:flex-start; align-items:center; }
+    .word { padding:9px 11px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌟 Sukaneka 🌟</h1>
+  <p><strong>Latihan Menyusun Perkataan</strong></p>
+  <p>Susun perkataan untuk membentuk ayat yang lengkap.</p>
+</header>
+<div class="progress-wrap" aria-label="Kemajuan latihan"><div class="progress" id="progress"></div></div>
+<main>
+  <section class="card" aria-live="polite">
+    <div class="picture">
+      <span class="qtag" id="qtag">Soalan 1 daripada 5</span>
+      <img id="question-image" src="Q1.jpg" alt="Gambar untuk soalan 1">
+    </div>
+    <div class="practice">
+      <p class="instructions">Tekan perkataan mengikut susunan yang betul.</p>
+      <span class="answer-label">Perkataan:</span>
+      <div class="word-bank" id="word-bank"></div>
+      <span class="answer-label">Ayat kamu:</span>
+      <div class="answer" id="answer" aria-label="Ayat yang telah disusun"><span class="placeholder">Tekan perkataan di atas untuk mula…</span></div>
+      <div class="controls">
+        <button class="action primary" id="check">Semak jawapan ✓</button>
+        <button class="action" id="undo">Undur ↩</button>
+        <button class="action" id="reset">Cuba semula ↻</button>
+        <button class="action" id="hint">Petunjuk 💡</button>
+      </div>
+      <p class="feedback" id="feedback" role="status"></p>
+    </div>
+  </section>
+  <div class="bottom">
+    <span class="score" id="score">⭐ Betul: 0 / 5</span>
+    <button class="action next" id="next" disabled>Soalan seterusnya →</button>
+  </div>
+</main>
+<p class="note">Bagus! Teruskan mencuba. 😊</p>
+<script>
+const questions = [
+  { words:["di padang","berkumpul","peserta","Semua"], answer:["Semua","peserta","berkumpul","di padang"], sentence:"Semua peserta berkumpul di padang." },
+  { words:["bermula","Sukaneka","acara","guni","di dalam","lari","dengan"], answer:["Sukaneka","bermula","dengan","acara","lari","di dalam","guni"], sentence:"Sukaneka bermula dengan acara lari di dalam guni." },
+  { words:["acara","menyertai","belon","Kanak-kanak","meniup"], answer:["Kanak-kanak","menyertai","acara","meniup","belon"], sentence:"Kanak-kanak menyertai acara meniup belon." },
+  { words:["acara","lelaki","Kumpulan","dewasa","tali","tarik","menyertai"], answer:["Kumpulan","lelaki","dewasa","menyertai","acara","tarik","tali"], sentence:"Kumpulan lelaki dewasa menyertai acara tarik tali." },
+  { words:["Golongan","menyertai","wanita","acara","epal","kupas","buah"], answer:["Golongan","wanita","menyertai","acara","kupas","buah","epal"], sentence:"Golongan wanita menyertai acara kupas buah epal." }
+];
+let current = 0, selected = [], solved = new Set(), hinted = new Set();
+const bank = document.getElementById('word-bank'), answerBox = document.getElementById('answer');
+const feedback = document.getElementById('feedback');
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function loadQuestion() {
+  const q = questions[current];
+  selected = [];
+  document.getElementById('qtag').textContent = `Soalan ${current+1} daripada ${questions.length}`;
+  document.getElementById('question-image').src = `Q${current+1}.jpg`;
+  document.getElementById('question-image').alt = `Gambar untuk soalan ${current+1}`;
+  bank.innerHTML = '';
+  shuffled(q.words).forEach((word,i) => {
+    const btn = document.createElement('button');
+    btn.className='word'; btn.textContent=word; btn.type='button'; btn.dataset.word=word; btn.dataset.id=String(i);
+    btn.addEventListener('click', () => { if (btn.disabled) return; selected.push({word, id:btn.dataset.id}); renderAnswer(); btn.disabled=true; feedback.textContent=''; feedback.className='feedback'; });
+    bank.appendChild(btn);
+  });
+  renderAnswer();
+  feedback.textContent = solved.has(current) ? 'Hebat! Jawapan soalan ini sudah betul. 🎉' : '';
+  feedback.className = solved.has(current) ? 'feedback good' : 'feedback';
+  document.getElementById('next').disabled = !solved.has(current) || current===questions.length-1;
+  document.getElementById('check').disabled = solved.has(current);
+  document.getElementById('progress').style.width = `${solved.size/questions.length*100}%`;
+  document.getElementById('score').textContent = `⭐ Betul: ${solved.size} / ${questions.length}`;
+}
+function renderAnswer() {
+  answerBox.innerHTML='';
+  if (!selected.length) { const span=document.createElement('span'); span.className='placeholder'; span.textContent='Tekan perkataan di atas untuk mula…'; answerBox.appendChild(span); return; }
+  selected.forEach((item,index) => {
+    const btn=document.createElement('button'); btn.className='word'; btn.type='button'; btn.textContent=item.word; btn.title='Tekan untuk membuang perkataan ini';
+    btn.addEventListener('click', () => { selected.splice(index,1); const source=[...bank.querySelectorAll('button')].find(b=>b.dataset.id===item.id); if(source) source.disabled=false; renderAnswer(); feedback.textContent=''; feedback.className='feedback'; });
+    answerBox.appendChild(btn);
+  });
+}
+document.getElementById('check').addEventListener('click', () => {
+  const q=questions[current];
+  const got=selected.map(x=>x.word);
+  const expected=q.answer.map(x=>x.toLowerCase());
+  if (got.length===expected.length && got.every((w,i)=>w.toLowerCase()===expected[i])) {
+    solved.add(current); feedback.textContent='Betul! Syabas! 🌟'; feedback.className='feedback good';
+    document.getElementById('check').disabled=true;
+    document.getElementById('next').disabled=current===questions.length-1;
+    document.getElementById('progress').style.width=`${solved.size/questions.length*100}%`;
+    document.getElementById('score').textContent=`⭐ Betul: ${solved.size} / ${questions.length}`;
+    if (solved.size===questions.length) feedback.textContent='Betul! Syabas! Semua soalan selesai! 🏆';
+  } else { feedback.textContent='Belum tepat. Cuba susun semula perkataan ya! 😊'; feedback.className='feedback try'; }
+});
+document.getElementById('undo').addEventListener('click', () => {
+  if (!selected.length) return;
+  const item=selected.pop(); const source=[...bank.querySelectorAll('button')].find(b=>b.dataset.id===item.id); if(source) source.disabled=false;
+  renderAnswer(); feedback.textContent=''; feedback.className='feedback';
+});
+document.getElementById('reset').addEventListener('click', () => { solved.delete(current); loadQuestion(); });
+document.getElementById('hint').addEventListener('click', () => {
+  const q=questions[current]; hinted.add(current);
+  feedback.textContent=`Petunjuk: Mulakan ayat dengan “${q.answer[0]}”.`; feedback.className='feedback';
+});
+document.getElementById('next').addEventListener('click', () => { if(current<questions.length-1) { current++; loadQuestion(); } });
+loadQuestion();
+</script>
+</body>
+</html>
